@@ -1,13 +1,15 @@
 const std = @import("std");
 const print = std.debug.print;
-const data_structures = @import("data_structures");
-const lists = data_structures.lists;
+const zigDSA = @import("zigDSA");
+const lists = zigDSA.lists;
 
+// Testing the Library here:
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
+    // LinkedList:
     var I32List = lists.LinkedList(i32).init(allocator);
     defer I32List.deinit();
 
