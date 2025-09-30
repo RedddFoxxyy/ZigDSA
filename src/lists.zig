@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 
 // ----Linked List(Doubly)----
 pub fn LinkedList(comptime T: type) type {
@@ -65,6 +66,46 @@ pub fn LinkedList(comptime T: type) type {
                 _ = try self.push_front(data);
             }
         }
+
+        pub fn pop(self: *Self) *Node {
+            const popped_tail = self.tail.?;
+            var prev_node = popped_tail.prev.?;
+            prev_node.next = null;
+            self.tail = prev_node;
+            self.length -= 1;
+            return popped_tail;
+        }
+
+        pub fn pop_and_destroy(self: *Self) void {
+            self.allocator.destroy(self.pop());
+        }
+
+        pub fn pop_front(self: *Self) *Node {
+            const popped_head = self.head.?;
+            var next_node = popped_head.next.?;
+            next_node.prev = null;
+            self.head = next_node;
+            self.length -= 1;
+            return popped_head;
+        }
+
+        pub fn pop_front_and_destroy(self: *Self) void {
+            self.allocator.destroy(self.pop_front());
+        }
+
+        pub fn pretty_print(self: *Self) void {
+            var current = self.head;
+            while (current) |node| {
+                print("{} -> ", .{node.data});
+                current = node.next;
+            }
+            print("null\n", .{});
+        }
+
+        pub fn pretty_print_verbose(self: *Self) void {
+            self.pretty_print();
+            print("List length: {d}\n", .{self.len()});
+        }
     };
 }
 
@@ -113,23 +154,52 @@ test "Linked List" {
     try list2.push_front(3);
     // List should be: 3 -> 5
     try expectEqual(@as(usize, 2), list2.len());
-    try expectEqual(@as(u8, 3), list2.head.?.data);
-    try expectEqual(@as(u8, 5), list2.tail.?.data);
+    try expectEqual(@as(i32, 3), list2.head.?.data);
+    try expectEqual(@as(i32, 5), list2.tail.?.data);
 
-    // 4. Test Mixed Operations and Traversal
+    // 4. Test pop
     var list3 = LinkedList(i32).init(allocator);
     defer list3.deinit();
 
-    try list3.push(2); // list: 2
-    try list3.push(3); // list: 2 -> 3
-    try list3.push_front(1); // list: 1 -> 2 -> 3
+    try list3.push(10);
+    try list3.push(20);
+    try list3.push(450);
+    try list3.push_front(5);
+    try list3.push_front(3);
+    try list3.push_front(7);
 
-    try expectEqual(@as(usize, 3), list3.len());
-    try expectEqual(1, list3.head.?.data);
-    try expectEqual(3, list3.tail.?.data);
+    // List should be: 7 -> 3 -> 5 -> 10 -> 20 -> 450
+    try expectEqual(@as(usize, 6), list3.len());
+    try expectEqual(@as(i32, 7), list3.head.?.data);
+    try expectEqual(@as(i32, 450), list3.tail.?.data);
+
+    // Pop last 2 nodes and destroy them.
+    allocator.destroy(list3.pop());
+    list3.pop_and_destroy();
+
+    // Pop first 2 nodes and destroy them.
+    allocator.destroy(list3.pop_front());
+    list3.pop_front_and_destroy();
+
+    // List should be: 5 -> 10
+    try expectEqual(@as(usize, 2), list3.len());
+    try expectEqual(@as(i32, 5), list3.head.?.data);
+    try expectEqual(@as(i32, 10), list3.tail.?.data);
+
+    // 5. Test Mixed Operations and Traversal
+    var list4 = LinkedList(i32).init(allocator);
+    defer list4.deinit();
+
+    try list4.push(2); // list: 2
+    try list4.push(3); // list: 2 -> 3
+    try list4.push_front(1); // list: 1 -> 2 -> 3
+
+    try expectEqual(@as(usize, 3), list4.len());
+    try expectEqual(1, list4.head.?.data);
+    try expectEqual(3, list4.tail.?.data);
 
     // Traverse forward
-    var current = list3.head;
+    var current = list4.head;
     try expectEqual(1, current.?.data);
     current = current.?.next;
     try expectEqual(2, current.?.data);
@@ -137,7 +207,7 @@ test "Linked List" {
     try expectEqual(3, current.?.data);
 
     // Traverse backward
-    current = list3.tail;
+    current = list4.tail;
     try expectEqual(3, current.?.data);
     current = current.?.prev;
     try expectEqual(2, current.?.data);
